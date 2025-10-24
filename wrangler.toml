@@ -1,0 +1,17 @@
+name = "url-shortener"
+main = "cloudflare-worker.js"
+compatibility_date = "2023-12-01"
+
+[env.production]
+name = "url-shortener-prod"
+
+# Optional: Add custom domain
+# [env.production.routes]
+# pattern = "your-domain.com/*"
+# zone_name = "your-domain.com"
+
+# Optional: Add KV namespace for persistent storage
+# [[kv_namespaces]]
+# binding = "URL_STORE"
+# id = "your-kv-namespace-id"
+# preview_id = "your-preview-kv-namespace-id"
