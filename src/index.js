@@ -7,42 +7,47 @@
 export default {
   /**
    * The main fetch handler for the Cloudflare Worker.
-   * @param {Request} request - The incoming HTTP request.
-   * @param {object} env - The environment object containing secrets, variables, and KV bindings.
-   * @returns {Promise<Response>} A promise that resolves to the HTTP response.
+   * This function acts as the central router for all incoming requests.
    */
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname.slice(1);
 
+    // Handle incoming POST requests from the Telegram webhook.
     if (request.method === 'POST') {
       return this.handleTelegramUpdate(request, env);
     }
 
-    if (request.method === 'GET' && path) {
-      return this.handleRedirect(path, env);
+    // Handle incoming GET requests.
+    if (request.method === 'GET') {
+      if (path) {
+        // If a path exists (e.g., /AbC123d), treat it as a short link and redirect.
+        return this.handleRedirect(path, env);
+      } else {
+        // If no path exists (root domain), redirect to the GitHub repository.
+        const repoUrl = env.GITHUB_REPO_URL;
+        if (repoUrl) {
+          return Response.redirect(repoUrl, 302);
+        } else {
+          return new Response('This is a Telegram URL Shortener Bot.', { status: 200 });
+        }
+      }
     }
 
-    const repoUrl = env.GITHUB_REPO_URL || "https://github.com/cloudflare/workers-sdk";
-    return new Response(
-      `<html>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 4rem; background-color: #f3f4f6;">
-          <div style="max-width: 600px; margin: auto; background: white; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
-            <h1 style="color: #111827;">Telegram URL Shortener Bot</h1>
-            <p style="color: #4b5563;">This domain powers a serverless URL shortener bot on Telegram.</p>
-            <a href="${repoUrl}" target="_blank" style="display: inline-block; margin-top: 1rem; padding: 12px 24px; background-color: #1f2937; color: white; text-decoration: none; border-radius: 5px; font-weight: 500;">View on GitHub</a>
-          </div>
-        </body>
-      </html>`, {
-        headers: { 'Content-Type': 'text/html' },
-      }
-    );
+    // --- YEH HISSA UPDATE KIYA GAYA HAI ---
+    // For any other HTTP method (like PUT, DELETE, etc.), return our custom "alive" message.
+    const aliveMessage = `Bot is alive.
+GitHub: https://github.com/Johndevils/url-shortner-
+Credit: https://t.me/pheonixion`;
+
+    return new Response(aliveMessage, {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' },
+    });
   },
 
   /**
    * Handles incoming updates from the Telegram webhook.
-   * @param {Request} request The incoming request from Telegram.
-   * @param {object} env The environment object.
    */
   async handleTelegramUpdate(request, env) {
     const payload = await request.json();
@@ -52,7 +57,6 @@ export default {
       const text = message.text;
 
       if (text === '/start') {
-        // UPDATED: Call the new text-only welcome message function.
         await this.sendWelcomeMessage(env, chatId);
       } else if (this.isValidUrl(text)) {
         await this.shortenAndReply(request, env, chatId, text);
@@ -65,8 +69,6 @@ export default {
 
   /**
    * Handles redirecting a short code to its corresponding long URL.
-   * @param {string} shortCode The short code from the URL path.
-   * @param {object} env The environment object.
    */
   async handleRedirect(shortCode, env) {
     const longUrl = await env.URL_STORE.get(shortCode);
@@ -76,12 +78,9 @@ export default {
       return new Response('URL not found.', { status: 404 });
     }
   },
-
-  // --- THIS IS THE NEW, SIMPLIFIED WELCOME FUNCTION ---
+  
   /**
    * Sends the welcome message as text with an inline keyboard.
-   * @param {object} env The environment object.
-   * @param {number} chatId The chat ID to send the message to.
    */
   async sendWelcomeMessage(env, chatId) {
     const text = "Welcome! I'm a URL shortener bot powered by Cloudflare Workers. Send me any long URL, and I'll shrink it for you!";
@@ -113,10 +112,6 @@ export default {
 
   /**
    * Shortens a URL, stores it in KV, and sends the result back to the user.
-   * @param {Request} request The original incoming request.
-   * @param {object} env The environment object.
-   * @param {number} chatId The chat ID to reply to.
-   * @param {string} longUrl The URL to shorten.
    */
   async shortenAndReply(request, env, chatId, longUrl) {
     try {
@@ -134,9 +129,6 @@ export default {
 
   /**
    * Sends a simple text message via the Telegram Bot API.
-   * @param {object} env The environment object.
-   * @param {number} chatId The chat ID to send the message to.
-   * @param {string} text The text to send.
    */
   async sendMessage(env, chatId, text) {
     const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
@@ -148,7 +140,7 @@ export default {
     });
   },
 
-  // --- Helper Functions (Unchanged) ---
+  // --- Helper Functions ---
   isValidUrl(urlString) {
     try {
       const url = new URL(urlString);
