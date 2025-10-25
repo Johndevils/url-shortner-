@@ -86,7 +86,7 @@ export default {
    */
   async sendWelcomePhoto(env, chatId) {
     // --- IMPORTANT: REPLACE THIS URL with the raw link to your image on GitHub ---
-    const imageUrl = 'https://raw.githubusercontent.com/Johndevils/url-shortner-/refs/heads/main/src/assets/welcome.gif';
+    const imageUrl = 'https://raw.githubusercontent.com/Johndevils/url-shortner-/refs/heads/main/src/assets/banner.png';
 
     const caption = "Welcome! I'm a URL shortener bot powered by Cloudflare Workers. Send me any long URL, and I'll shrink it for you!";
     const githubRepoUrl = env.GITHUB_REPO_URL;
