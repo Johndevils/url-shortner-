@@ -1,4 +1,5 @@
-/** https://github.com/Johndevils/url-shortner- */
+/** https://github.com/Johndevils/url-shortner-
+credit : arsynox*/
 export default {
   /**
    * The main fetch handler for the Cloudflare Worker.
@@ -144,3 +145,5 @@ export default {
     return code;
   },
 };
+/** https://github.com/Johndevils/url-shortner- 
+credit: arsynox*/
