@@ -52,8 +52,8 @@ export default {
       const text = message.text;
 
       if (text === '/start') {
-        // UPDATED: Call the new text-only welcome message function.
-        await this.sendWelcomeMessage(env, chatId);
+        // UPDATED: Ab hum image waala function call karenge.
+        await this.sendWelcomePhoto(env, chatId);
       } else if (this.isValidUrl(text)) {
         await this.shortenAndReply(request, env, chatId, text);
       } else {
@@ -77,14 +77,17 @@ export default {
     }
   },
 
-  // --- THIS IS THE NEW, SIMPLIFIED WELCOME FUNCTION ---
+  // --- YEH WELCOME FUNCTION UPDATE HO GAYA HAI ---
   /**
-   * Sends the welcome message as text with an inline keyboard.
+   * Sends the welcome message with a static image, caption, and inline keyboard.
    * @param {object} env The environment object.
    * @param {number} chatId The chat ID to send the message to.
    */
-  async sendWelcomeMessage(env, chatId) {
-    const text = "Welcome! I'm a URL shortener bot powered by Cloudflare Workers. Send me any long URL, and I'll shrink it for you!";
+  async sendWelcomePhoto(env, chatId) {
+    // --- IMPORTANT: Is URL ko apni image ke RAW URL se badal dein ---
+    const imageUrl = 'https://raw.githubusercontent.com/Johndevils/url-shortner-/main/assets/welcome.gif';
+
+    const caption = "Welcome! I'm a URL shortener bot powered by Cloudflare Workers. Send me any long URL, and I'll shrink it for you!";
     const githubRepoUrl = env.GITHUB_REPO_URL;
 
     const replyMarkup = {
@@ -98,11 +101,13 @@ export default {
 
     const payload = {
       chat_id: chatId,
-      text: text,
+      photo: imageUrl, // Key 'photo' image ke liye
+      caption: caption, // Caption description ke liye
       reply_markup: replyMarkup,
     };
     
-    const apiUrl = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+    // API endpoint ab /sendPhoto hai
+    const apiUrl = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendPhoto`;
     
     await fetch(apiUrl, {
       method: 'POST',
@@ -113,10 +118,6 @@ export default {
 
   /**
    * Shortens a URL, stores it in KV, and sends the result back to the user.
-   * @param {Request} request The original incoming request.
-   * @param {object} env The environment object.
-   * @param {number} chatId The chat ID to reply to.
-   * @param {string} longUrl The URL to shorten.
    */
   async shortenAndReply(request, env, chatId, longUrl) {
     try {
@@ -134,9 +135,6 @@ export default {
 
   /**
    * Sends a simple text message via the Telegram Bot API.
-   * @param {object} env The environment object.
-   * @param {number} chatId The chat ID to send the message to.
-   * @param {string} text The text to send.
    */
   async sendMessage(env, chatId, text) {
     const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
