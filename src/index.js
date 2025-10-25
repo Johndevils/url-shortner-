@@ -85,8 +85,8 @@ export default {
    * @param {number} chatId The chat ID to send the message to.
    */
   async sendWelcomePhoto(env, chatId) {
-    // --- IMPORTANT: REPLACE THIS URL with the raw link to your image on GitHub ---
-    const imageUrl = 'https://raw.githubusercontent.com/Johndevils/url-shortner-/refs/heads/main/src/assets/banner.png';
+    // --- THIS URL IS NOW CORRECTED ---
+    const imageUrl = 'https://raw.githubusercontent.com/Johndevils/url-shortner-/main/src/assets/welcome.gif';
 
     const caption = "Welcome! I'm a URL shortener bot powered by Cloudflare Workers. Send me any long URL, and I'll shrink it for you!";
     const githubRepoUrl = env.GITHUB_REPO_URL;
@@ -113,61 +113,3 @@ export default {
       body: JSON.stringify(payload),
     });
   },
-
-  /**
-   * Shortens a URL, stores it in KV, and sends the result back to the user.
-   * @param {Request} request The original incoming request.
-   * @param {object} env The environment object.
-   * @param {number} chatId The chat ID to reply to.
-   * @param {string} longUrl The URL to shorten.
-   */
-  async shortenAndReply(request, env, chatId, longUrl) {
-    try {
-      const workerUrl = new URL(request.url).origin;
-      const shortCode = await this.generateUniqueShortCode(env.URL_STORE);
-      await env.URL_STORE.put(shortCode, longUrl);
-
-      const shortUrl = `${workerUrl}/${shortCode}`;
-      await this.sendMessage(env, chatId, `Success! Here is your short URL:\n${shortUrl}`);
-    } catch (error) {
-      console.error("Error in shortenAndReply:", error);
-      await this.sendMessage(env, chatId, 'Sorry, an unexpected error occurred. Please try again later.');
-    }
-  },
-
-  /**
-   * Sends a simple text message via the Telegram Bot API.
-   * @param {object} env The environment object.
-   * @param {number} chatId The chat ID to send the message to.
-   * @param {string} text The text to send.
-   */
-  async sendMessage(env, chatId, text) {
-    const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
-    const payload = { chat_id: chatId, text: text };
-    await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-  },
-
-  // --- Helper Functions (Unchanged) ---
-  isValidUrl(urlString) {
-    try {
-      const url = new URL(urlString);
-      return url.protocol === 'http:' || url.protocol === 'https:';
-    } catch (_) { return false; }
-  },
-  async generateUniqueShortCode(store, length = 7) {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let code; let isUnique = false;
-    while (!isUnique) {
-      code = '';
-      for (let i = 0; i < length; i++) {
-        code += characters.charAt(Math.floor(Math.random() * characters.length));
-      }
-      if (!(await store.get(code))) { isUnique = true; }
-    }
-    return code;
-  },
-};
