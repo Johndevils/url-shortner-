@@ -91,7 +91,7 @@ export default {
    * @param {number} chatId The chat ID to send the message to.
    */
   async sendWelcomeAnimation(env, chatId) {
-    const animationUrl = 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWYwZTRmMjkyM2RjZDI1NmVjYmQ3OWMyYjI3MjcxN2RmMjNhMzA2ZiZlcD12MV9pbnRlcm5hbF9naWZzX2dpZklkJmN0PWc/3o6MbhgBx0UfbB7Dck/giphy.gif';
+    const animationUrl = '(src/assets/welcome.gif)';
     const caption = "Welcome! I'm a URL shortener bot powered by Cloudflare Workers. Send me any long URL, and I'll shrink it for you!";
     const githubRepoUrl = env.GITHUB_REPO_URL;
 
