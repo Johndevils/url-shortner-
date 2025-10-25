@@ -1,17 +1,18 @@
-name = "url-shortener"
-main = "cloudflare-worker.js"
-compatibility_date = "2023-12-01"
+# wrangler.toml
 
-[env.production]
-name = "url-shortener-prod"
+name = "telegram-url-shortener"
+main = "src/index.js"
+compatibility_date = "2023-10-30"
 
-# Optional: Add custom domain
-# [env.production.routes]
-# pattern = "your-domain.com/*"
-# zone_name = "your-domain.com"
+# This binding allows the worker to access the KV namespace.
+# The `id` will be automatically created and filled in during the deploy process.
+[[kv_namespaces]]
+binding = "URL_STORE"
+id = ""
+preview_id = ""
 
-# Optional: Add KV namespace for persistent storage
-# [[kv_namespaces]]
-# binding = "URL_STORE"
-# id = "your-kv-namespace-id"
-# preview_id = "your-preview-kv-namespace-id"
+# This section defines secret variables.
+# The user will be prompted to enter these values during deployment.
+[vars]
+TELEGRAM_BOT_TOKEN = ""
+GITHUB_REPO_URL = ""
