@@ -1,13 +1,12 @@
 /**
- * https://github.com/Johndevils/url-shortner-
+ * A serverless URL shortener and Telegram bot, running on Cloudflare Workers.
  *
- * Credit : Arsynox 
+ * GitHub: https://github.com/Johndevils/url-shortner-
+ * Credit: @Arsynox, @pheonixion
  */
 export default {
   /**
    * The main fetch handler for the Cloudflare Worker.
-   * This function acts as the central router for all incoming requests.
-   *
    * @param {Request} request - The incoming HTTP request.
    * @param {object} env - The environment object containing secrets, variables, and KV bindings.
    * @returns {Promise<Response>} A promise that resolves to the HTTP response.
@@ -53,8 +52,8 @@ export default {
       const text = message.text;
 
       if (text === '/start') {
-        // UPDATED: Call the new function for sending a photo.
-        await this.sendWelcomePhoto(env, chatId);
+        // UPDATED: Call the new text-only welcome message function.
+        await this.sendWelcomeMessage(env, chatId);
       } else if (this.isValidUrl(text)) {
         await this.shortenAndReply(request, env, chatId, text);
       } else {
@@ -78,34 +77,32 @@ export default {
     }
   },
 
-  // --- THIS IS THE MODIFIED WELCOME FUNCTION ---
+  // --- THIS IS THE NEW, SIMPLIFIED WELCOME FUNCTION ---
   /**
-   * Sends the welcome message with a static image, caption, and GitHub button.
+   * Sends the welcome message as text with an inline keyboard.
    * @param {object} env The environment object.
    * @param {number} chatId The chat ID to send the message to.
    */
-  async sendWelcomePhoto(env, chatId) {
-    // --- THIS URL IS NOW CORRECTED ---
-    const imageUrl = 'https://raw.githubusercontent.com/Johndevils/url-shortner-/main/src/assets/welcome.gif';
-
-    const caption = "Welcome! I'm a URL shortener bot powered by Cloudflare Workers. Send me any long URL, and I'll shrink it for you!";
+  async sendWelcomeMessage(env, chatId) {
+    const text = "Welcome! I'm a URL shortener bot powered by Cloudflare Workers. Send me any long URL, and I'll shrink it for you!";
     const githubRepoUrl = env.GITHUB_REPO_URL;
 
     const replyMarkup = {
       inline_keyboard: [
-        [{ text: '⭐ View on GitHub', url: githubRepoUrl }],
+        [ // Row 1
+          { text: '⭐ View on GitHub', url: githubRepoUrl },
+          { text: 'Credit: @pheonixion', url: 'https://t.me/pheonixion' }
+        ]
       ],
     };
 
     const payload = {
       chat_id: chatId,
-      photo: imageUrl, // Use 'photo' for static images
-      caption: caption,
+      text: text,
       reply_markup: replyMarkup,
     };
     
-    // Use the /sendPhoto API endpoint
-    const apiUrl = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendPhoto`;
+    const apiUrl = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
     
     await fetch(apiUrl, {
       method: 'POST',
@@ -113,3 +110,61 @@ export default {
       body: JSON.stringify(payload),
     });
   },
+
+  /**
+   * Shortens a URL, stores it in KV, and sends the result back to the user.
+   * @param {Request} request The original incoming request.
+   * @param {object} env The environment object.
+   * @param {number} chatId The chat ID to reply to.
+   * @param {string} longUrl The URL to shorten.
+   */
+  async shortenAndReply(request, env, chatId, longUrl) {
+    try {
+      const workerUrl = new URL(request.url).origin;
+      const shortCode = await this.generateUniqueShortCode(env.URL_STORE);
+      await env.URL_STORE.put(shortCode, longUrl);
+
+      const shortUrl = `${workerUrl}/${shortCode}`;
+      await this.sendMessage(env, chatId, `Success! Here is your short URL:\n${shortUrl}`);
+    } catch (error) {
+      console.error("Error in shortenAndReply:", error);
+      await this.sendMessage(env, chatId, 'Sorry, an unexpected error occurred. Please try again later.');
+    }
+  },
+
+  /**
+   * Sends a simple text message via the Telegram Bot API.
+   * @param {object} env The environment object.
+   * @param {number} chatId The chat ID to send the message to.
+   * @param {string} text The text to send.
+   */
+  async sendMessage(env, chatId, text) {
+    const url = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const payload = { chat_id: chatId, text: text };
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  },
+
+  // --- Helper Functions (Unchanged) ---
+  isValidUrl(urlString) {
+    try {
+      const url = new URL(urlString);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (_) { return false; }
+  },
+  async generateUniqueShortCode(store, length = 7) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let code; let isUnique = false;
+    while (!isUnique) {
+      code = '';
+      for (let i = 0; i < length; i++) {
+        code += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      if (!(await store.get(code))) { isUnique = true; }
+    }
+    return code;
+  },
+};
