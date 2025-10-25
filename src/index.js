@@ -24,26 +24,21 @@ export default {
         // If a path exists (e.g., /AbC123d), treat it as a short link and redirect.
         return this.handleRedirect(path, env);
       } else {
+        // --- HTML REMOVED ---
         // If no path exists (root domain), redirect to the GitHub repository.
         const repoUrl = env.GITHUB_REPO_URL;
         if (repoUrl) {
+          // Using a 302 redirect (Found) is appropriate for this kind of link.
           return Response.redirect(repoUrl, 302);
         } else {
-          return new Response('This is a Telegram URL Shortener Bot.', { status: 200 });
+          // Fallback message if GITHUB_REPO_URL is not set.
+          return new Response('This is a Telegram URL Shortener Bot. The GitHub repository link is not configured.', { status: 200 });
         }
       }
     }
 
-    // --- YEH HISSA UPDATE KIYA GAYA HAI ---
-    // For any other HTTP method (like PUT, DELETE, etc.), return our custom "alive" message.
-    const aliveMessage = `Bot is alive.
-GitHub: https://github.com/Johndevils/url-shortner-
-Credit: https://t.me/pheonixion`;
-
-    return new Response(aliveMessage, {
-      status: 200,
-      headers: { 'Content-Type': 'text/plain' },
-    });
+    // For any other HTTP method, return an error.
+    return new Response('Method Not Allowed', { status: 405 });
   },
 
   /**
@@ -73,7 +68,7 @@ Credit: https://t.me/pheonixion`;
   async handleRedirect(shortCode, env) {
     const longUrl = await env.URL_STORE.get(shortCode);
     if (longUrl) {
-      return Response.redirect(longUrl, 301);
+      return Response.redirect(longUrl, 301); // 301 Permanent Redirect for short links
     } else {
       return new Response('URL not found.', { status: 404 });
     }
