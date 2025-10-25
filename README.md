@@ -7,7 +7,7 @@ This is a template for a serverless URL shortener that operates via a Telegram b
 
 The bot greets new users with a welcome animation and provides a button to view the source code on GitHub.
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/YOUR_USERNAME/YOUR_REPO_NAME)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Johndevils/url-shortner-)
 
 **Important:** Remember to replace `YOUR_USERNAME/YOUR_REPO_NAME` in the button link above with your actual GitHub repository URL after you've forked or created it.
 
