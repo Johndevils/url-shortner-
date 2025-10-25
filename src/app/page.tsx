@@ -308,7 +308,7 @@ export default function Home() {
         {/* Footer */}
         <footer className="text-center mt-16 pt-8 border-t border-gray-200">
           <p className="text-gray-600 text-sm">
-            Built with Next.js and ready for Cloudflare Workers deployment
+            Built with Next.js by Arsynox 
           </p>
         </footer>
       </div>
