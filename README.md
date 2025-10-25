@@ -1,4 +1,4 @@
-![Telegram URL Shortener Banner](.src/assets/banner-integration.png)
+![Telegram URL Shortener Banner](src/assets/banner.png)
 
 
 # Telegram URL Shortener on Cloudflare Workers
