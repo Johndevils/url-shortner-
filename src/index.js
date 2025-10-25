@@ -1,32 +1,29 @@
 /**
- * https://github.com/Johndevils/url-shortner- *
- * Credit : Arsynox */
+ * https://github.com/Johndevils/url-shortner-
+ *
+ * Credit : Arsynox 
+ */
 export default {
   /**
    * The main fetch handler for the Cloudflare Worker.
    * This function acts as the central router for all incoming requests.
    *
    * @param {Request} request - The incoming HTTP request.
-   * @param {object} env - The environment object containing secrets (TELEGRAM_BOT_TOKEN),
-   *                       variables (GITHUB_REPO_URL), and KV bindings (URL_STORE).
+   * @param {object} env - The environment object containing secrets, variables, and KV bindings.
    * @returns {Promise<Response>} A promise that resolves to the HTTP response.
    */
   async fetch(request, env) {
     const url = new URL(request.url);
-    const path = url.pathname.slice(1); // Remove the leading '/' from the path
+    const path = url.pathname.slice(1);
 
-    // ROUTE 1: Handle POST requests from the Telegram webhook.
     if (request.method === 'POST') {
       return this.handleTelegramUpdate(request, env);
     }
 
-    // ROUTE 2: Handle GET requests with a path (e.g., /AbC123d) for redirection.
     if (request.method === 'GET' && path) {
       return this.handleRedirect(path, env);
     }
 
-    // ROUTE 3: If a user visits the root worker URL, show a simple HTML landing page.
-    // This provides a professional presence for your custom domain.
     const repoUrl = env.GITHUB_REPO_URL || "https://github.com/cloudflare/workers-sdk";
     return new Response(
       `<html>
@@ -44,7 +41,7 @@ export default {
   },
 
   /**
-   * Handles incoming updates from the Telegram webhook by parsing the JSON payload.
+   * Handles incoming updates from the Telegram webhook.
    * @param {Request} request The incoming request from Telegram.
    * @param {object} env The environment object.
    */
@@ -55,17 +52,15 @@ export default {
       const chatId = message.chat.id;
       const text = message.text;
 
-      // Route commands and messages to the appropriate functions.
       if (text === '/start') {
-        await this.sendWelcomeAnimation(env, chatId);
+        // UPDATED: Call the new function for sending a photo.
+        await this.sendWelcomePhoto(env, chatId);
       } else if (this.isValidUrl(text)) {
         await this.shortenAndReply(request, env, chatId, text);
       } else {
         await this.sendMessage(env, chatId, 'That doesn\'t look like a valid URL. Please send a URL that starts with http:// or https://');
       }
     }
-    // Always return a 200 OK to Telegram to acknowledge receipt of the update.
-    // If you don't, Telegram will repeatedly re-send the same update.
     return new Response('OK', { status: 200 });
   },
 
@@ -77,25 +72,25 @@ export default {
   async handleRedirect(shortCode, env) {
     const longUrl = await env.URL_STORE.get(shortCode);
     if (longUrl) {
-      // Perform a 301 Permanent Redirect to the long URL.
       return Response.redirect(longUrl, 301);
     } else {
-      // If the code is not found in the KV store, return a 404 Not Found response.
-      return new Response('URL not found. It may have expired or never existed.', { status: 404 });
+      return new Response('URL not found.', { status: 404 });
     }
   },
 
+  // --- THIS IS THE MODIFIED WELCOME FUNCTION ---
   /**
-   * Sends the enhanced welcome message with a GIF and an inline GitHub button.
+   * Sends the welcome message with a static image, caption, and GitHub button.
    * @param {object} env The environment object.
    * @param {number} chatId The chat ID to send the message to.
    */
-  async sendWelcomeAnimation(env, chatId) {
-    const animationUrl = '(src/assets/welcome.gif)';
+  async sendWelcomePhoto(env, chatId) {
+    // --- IMPORTANT: REPLACE THIS URL with the raw link to your image on GitHub ---
+    const imageUrl = 'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/assets/welcome-banner.png';
+
     const caption = "Welcome! I'm a URL shortener bot powered by Cloudflare Workers. Send me any long URL, and I'll shrink it for you!";
     const githubRepoUrl = env.GITHUB_REPO_URL;
 
-    // The inline keyboard button structure required by the Telegram Bot API.
     const replyMarkup = {
       inline_keyboard: [
         [{ text: '⭐ View on GitHub', url: githubRepoUrl }],
@@ -104,12 +99,14 @@ export default {
 
     const payload = {
       chat_id: chatId,
-      animation: animationUrl,
+      photo: imageUrl, // Use 'photo' for static images
       caption: caption,
       reply_markup: replyMarkup,
     };
     
-    const apiUrl = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendAnimation`;
+    // Use the /sendPhoto API endpoint
+    const apiUrl = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendPhoto`;
+    
     await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -119,7 +116,7 @@ export default {
 
   /**
    * Shortens a URL, stores it in KV, and sends the result back to the user.
-   * @param {Request} request The original incoming request (used to determine the domain).
+   * @param {Request} request The original incoming request.
    * @param {object} env The environment object.
    * @param {number} chatId The chat ID to reply to.
    * @param {string} longUrl The URL to shorten.
@@ -154,42 +151,22 @@ export default {
     });
   },
 
-  // --- Helper Functions ---
-
-  /**
-   * Validates a string to ensure it is a well-formed URL with an http/https protocol.
-   * @param {string} urlString The string to validate.
-   * @returns {boolean} True if the URL is valid, false otherwise.
-   */
+  // --- Helper Functions (Unchanged) ---
   isValidUrl(urlString) {
     try {
       const url = new URL(urlString);
       return url.protocol === 'http:' || url.protocol === 'https:';
-    } catch (_) {
-      return false;
-    }
+    } catch (_) { return false; }
   },
-
-  /**
-   * Generates a random, unique short code that does not already exist in the KV store.
-   * It will retry if a collision occurs, which is statistically rare.
-   * @param {KVNamespace} store The KV store to check for uniqueness.
-   * @param {number} length The desired length of the short code (default is 7).
-   * @returns {Promise<string>} A unique short code.
-   */
   async generateUniqueShortCode(store, length = 7) {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let code;
-    let isUnique = false;
+    let code; let isUnique = false;
     while (!isUnique) {
       code = '';
       for (let i = 0; i < length; i++) {
         code += characters.charAt(Math.floor(Math.random() * characters.length));
       }
-      // Check if the generated code already exists in the KV store.
-      if (!(await store.get(code))) {
-        isUnique = true;
-      }
+      if (!(await store.get(code))) { isUnique = true; }
     }
     return code;
   },
