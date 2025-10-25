@@ -1,5 +1,4 @@
-// src/index.js
-
+/** https://github.com/Johndevils/url-shortner- */
 export default {
   /**
    * The main fetch handler for the Cloudflare Worker.
