@@ -1,3 +1,6 @@
+![Telegram URL Shortener Banner](./assets/banner-integration.png)
+
+
 # Telegram URL Shortener on Cloudflare Workers
 
 This is a template for a serverless URL shortener that operates via a Telegram bot. It is built entirely on the Cloudflare stack, using a Cloudflare Worker for logic and Cloudflare KV for storage.
